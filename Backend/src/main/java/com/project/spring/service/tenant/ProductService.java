@@ -61,7 +61,7 @@ public class ProductService {
     
         // Run Python script
         ProcessBuilder pb = new ProcessBuilder(
-                "python", "main.py", tempFile.getAbsolutePath()
+                "python3", "main.py", tempFile.getAbsolutePath()
         );
         pb.directory(new File(System.getProperty("user.dir") + "/python"));
 
