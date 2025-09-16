@@ -63,7 +63,7 @@ public class ProductService {
         ProcessBuilder pb = new ProcessBuilder(
                 "python", "main.py", tempFile.getAbsolutePath()
         );
-        pb.directory(Paths.get(System.getProperty("user.dir"), "..", "python").normalize().toFile());
+        pb.directory(new File(System.getProperty("user.dir") + "/python"));
 
         pb.redirectErrorStream(true);
     

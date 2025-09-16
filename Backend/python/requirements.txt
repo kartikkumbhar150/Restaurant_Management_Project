@@ -1,0 +1,10 @@
+pytesseract
+Pillow
+groq
+easyocr
+python-dotenv
+torch
+torchvision
+torchaudio
+python-multipart
+
