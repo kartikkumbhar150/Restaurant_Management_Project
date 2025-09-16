@@ -49,7 +49,7 @@ public class StaffService {
         staff.setName(dto.getName());
         staff.setUserName(dto.getUserName());
         staff.setRole(dto.getRole());
-        staff.setPassword(encoder.encode(dto.getPassword()));
+        staff.setPassword(dto.getPassword());
 
         Staff saved = staffRepository.saveAndFlush(staff);
 

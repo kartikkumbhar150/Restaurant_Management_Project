@@ -1,8 +1,8 @@
-# ai_utils.py
-import json
-from groq import Groq
 import os
-
+import re
+import json
+import sys
+from groq import Groq
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,18 +14,25 @@ if not GROQ_AI_API:
 # Initialize Groq client
 client = Groq(api_key=GROQ_AI_API)
 
+def extract_json_array(text: str):
+    """Safely extract the first JSON array from a string."""
+    match = re.search(r"\[.*\]", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except:
+            return []
+    return []
+
+def parse_price(price_str):
+    """Extract first numeric value from price string."""
+    nums = re.findall(r"\d+", str(price_str))
+    return int(nums[0]) if nums else 0
+
 def structure_menu(text: str):
-    """
-    Send extracted OCR text to Groq AI and get structured menu items as JSON.
-    Returns a list of menu item dictionaries with:
-    {
-        "category": str,
-        "subCategory": str,
-        "name": str,
-        "description": str,
-        "price": number
-    }
-    """
+    """Send extracted text to Groq AI and get structured menu items as JSON."""
+    if not text.strip():
+        return []
 
     prompt = f"""
 Extract menu items from the following text and return them as a JSON array.
@@ -45,15 +52,13 @@ Rules:
 - Output valid JSON only, no extra text.
 - If no items found, return [].
 - All objects must include all five fields.
-- price must be numeric only (no currency symbols, no quotes).
+- price must be numeric only.
 - Keep original casing for name, trim whitespace.
 - Use "" if description or subcategory is missing.
 
 Categories & Subcategories:
-- Use explicit section headings as category (e.g., "Starters", "Beverages").
-- If nested headings appear (e.g., "Main Course" then "Vegetarian"):
-    → "Main Course" goes in `category`
-    → "Vegetarian" goes in `subcategory`.
+- Use explicit section headings as category.
+- If nested headings appear, category → category, subcategory → subCategory.
 - If no subcategory exists, use "".
 - If no category is found, use "Uncategorized".
 - Ignore non-menu text like “Welcome”, “Contact”, “About Us”.
@@ -70,7 +75,7 @@ Item Detection:
 Prices:
 - Extract only the main numeric price.
 - Ignore ₹, Rs, INR, $, etc.
-- If a number like 2 or 7 appears before a price (e.g., 2 250 → ₹250), treat the second number as the price.
+- If a number like 2 or 7 appears before a price (e.g., 2 250 → 250), treat the second number as the price.
 - If multiple prices exist (e.g., small/large), pick the first numeric price.
 
 Descriptions:
@@ -85,7 +90,6 @@ Text:
 {text}
 """
 
-
     try:
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
@@ -98,20 +102,18 @@ Text:
         )
 
         raw_output = response.choices[0].message.content.strip()
+        menu_items = extract_json_array(raw_output)
 
-        # Try parsing JSON directly
-        try:
-            return json.loads(raw_output)
-        except json.JSONDecodeError:
-            # If extra text is returned, try to extract the JSON array part
-            start = raw_output.find("[")
-            end = raw_output.rfind("]") + 1
-            if start != -1 and end != -1:
-                try:
-                    return json.loads(raw_output[start:end])
-                except Exception:
-                    return []
-            return []
+        # Ensure price is numeric
+        for item in menu_items:
+            item["price"] = parse_price(item.get("price", 0))
+        return menu_items
+
     except Exception as e:
-        print("Error calling Groq API:", e)
-        return []
+        error_output = {
+            "status": "failure",
+            "message": f"Groq API error: {e}",
+            "data": None
+        }
+        print(json.dumps(error_output, indent=2, ensure_ascii=False))
+        sys.exit(1)

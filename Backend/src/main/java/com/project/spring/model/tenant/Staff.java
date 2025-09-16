@@ -18,7 +18,7 @@ public class Staff {
     private Long id;
 
     private String name;
-    @Column(name = "username", nullable = false, unique = true)
+    @Column(name = "user_name", nullable = false, unique = true)
     private String userName;
     private String password;
     private String role;

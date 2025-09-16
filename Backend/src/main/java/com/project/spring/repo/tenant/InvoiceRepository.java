@@ -31,7 +31,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("SELECT i FROM Invoice i WHERE i.invoiceNumber = :invoiceNumber")
     Optional<Invoice> findByInvoiceNumber(@Param("invoiceNumber") Long invoiceNumber);
 
-    // ✅ Most selling items with Pageable (lets us fetch top N directly from DB)
+    // Most selling items with Pageable (lets us fetch top N directly from DB)
     @Query("SELECT new com.project.spring.dto.ItemReportDTO(o.itemName, SUM(o.quantity)) " +
            "FROM OrderItem o GROUP BY o.itemName ORDER BY SUM(o.quantity) DESC")
     List<ItemReportDTO> getMostSellingItems(Pageable pageable);
@@ -46,7 +46,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     double getSalesBetweenDates(@Param("start") String start,
                                 @Param("end") String end);
 
-    // ✅ Last 7 days sales including zeros for missing days
+    // Last 7 days sales including zeros for missing days
     @Query(value = """
         SELECT 
     d.day::date AS day,
