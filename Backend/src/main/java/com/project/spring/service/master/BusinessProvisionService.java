@@ -135,11 +135,7 @@ CREATE TABLE order_item (
 
 CREATE TABLE invoice (
     id SERIAL PRIMARY KEY,
-    business_address VARCHAR(255),
-    business_fssai VARCHAR(255),
-    business_gst_number VARCHAR(255),
-    business_logo_url VARCHAR(255),
-    business_name VARCHAR(255),
+    
     customer_name VARCHAR(255),
     date VARCHAR(255),
     invoice_number BIGINT,
@@ -157,7 +153,6 @@ CREATE TABLE invoice (
     business_id BIGINT,
     "time" VARCHAR(255),
     table_number BIGINT,
-    business_gst_type INTEGER,
     order_id BIGINT
 );
 

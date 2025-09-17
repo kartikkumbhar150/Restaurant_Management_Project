@@ -54,12 +54,7 @@ public class InvoiceService {
                 .orElseThrow(() -> new RuntimeException("Business not found"));
 
         invoice.setBusiness(business);
-        invoice.setBusinessName(business.getName());
-        invoice.setBusinessAddress(business.getAddress());
-        invoice.setBusinessGstNumber(business.getGstNumber());
-        invoice.setBusinessFssai(business.getFssaiNo());
-        invoice.setBusinessLogoUrl(business.getLogoUrl());
-
+        
         int gstType = Optional.ofNullable(business.getGstType())
                 .orElseThrow(() -> new RuntimeException("GST Type missing"));
         invoice.setBusinessGstType(gstType);
@@ -148,10 +143,13 @@ public class InvoiceService {
         dto.setCgstPercent(gstRate / 2.0);
         dto.setGrandTotal(invoice.getGrandTotal());
 
-        dto.setBusinessName(invoice.getBusinessName());
-        dto.setBusinessAddress(invoice.getBusinessAddress());
-        dto.setBusinessGstNumber(invoice.getBusinessGstNumber());
-        dto.setBusinessFssai(invoice.getBusinessFssai());
+        if (invoice.getBusiness() != null) {
+        dto.setBusinessName(invoice.getBusiness().getName());
+        // <-- dynamic, not persisted on Invoice
+        dto.setBusinessAddress(invoice.getBusiness().getAddress());
+        dto.setBusinessGstNumber(invoice.getBusiness().getGstNumber());
+        dto.setBusinessFssai(invoice.getBusiness().getFssaiNo());
+    }
 
         if (invoice.getOrder() != null) {
             dto.setTableNumber(invoice.getTableNumber());

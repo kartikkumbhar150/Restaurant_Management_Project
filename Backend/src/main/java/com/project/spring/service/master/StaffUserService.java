@@ -40,6 +40,8 @@ public class StaffUserService {
             user.setRole(staff.getRole());
             user.setPassword(encoder.encode(staff.getPassword())); // Always encode
             user.setDbName(business.getDbName());
+            user.setToken(jwtService.getLastGeneratedToken());
+            
 
             staffUserRepository.saveAndFlush(user);
         } finally {

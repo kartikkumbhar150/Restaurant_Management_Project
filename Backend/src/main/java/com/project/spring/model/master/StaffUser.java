@@ -31,4 +31,6 @@ public class StaffUser {
     @Column(name = "db_name")
     private String dbName;
    
+    @Column(name = "token")
+    private String token;
 }

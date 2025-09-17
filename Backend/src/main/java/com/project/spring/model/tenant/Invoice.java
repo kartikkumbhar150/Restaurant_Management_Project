@@ -48,20 +48,7 @@ public class Invoice {
     @Column(name = "total_amount") // keep for compatibility
     private double totalAmount;
 
-    @Column(name = "business_name")
-    private String businessName;
-
-    @Column(name = "business_address")
-    private String businessAddress;
-
-    @Column(name = "business_gst_number")
-    private String businessGstNumber;
-
-    @Column(name = "business_fssai")
-    private String businessFssai;
-
-    @Column(name = "business_logo_url")
-    private String businessLogoUrl;
+    
 
     @Column(name = "table_number")
     private Long tableNumber;
