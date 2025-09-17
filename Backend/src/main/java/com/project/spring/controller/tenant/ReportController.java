@@ -3,7 +3,6 @@ package com.project.spring.controller.tenant;
 import com.project.spring.dto.DailySalesDTO;
 import com.project.spring.dto.DateRangeRequest;
 import com.project.spring.dto.DateRangeSummaryDTO;
-import com.project.spring.dto.TimeSlotReportDTO;
 import com.project.spring.model.tenant.Invoice;
 import com.project.spring.repo.tenant.InvoiceRepository;
 import com.project.spring.service.tenant.ReportService;

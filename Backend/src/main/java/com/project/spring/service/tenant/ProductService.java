@@ -1,5 +1,4 @@
 package com.project.spring.service.tenant;
-import java.nio.file.Paths;
 
 import com.project.spring.model.tenant.Product;
 import com.project.spring.repo.tenant.ProductRepository;
