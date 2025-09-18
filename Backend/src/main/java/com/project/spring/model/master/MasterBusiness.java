@@ -27,6 +27,8 @@ public class MasterBusiness {
     private Long phoneNo;  
     @Column(name = "email")
     private String email;  
+    @Column(name = "logo_url")
+    private String logoUrl;
 
    
 

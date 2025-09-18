@@ -5,7 +5,7 @@ import com.project.spring.dto.BusinessDTO;
 import com.project.spring.dto.DashboardDetailsDTO;
 import com.project.spring.model.tenant.Business;
 import com.project.spring.repo.tenant.TenantBusinessRepository;
-
+import com.project.spring.service.tenant.CloudinaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,40 +13,26 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/business")
 public class BusinessController {
 
+    private static final Long DEFAULT_BUSINESS_ID = 1L;
+
     @Autowired
     private TenantBusinessRepository businessRepository;
 
-    // Get all businesses
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<BusinessDTO>>> getAllBusinesses() {
-        try {
-            List<BusinessDTO> businesses = StreamSupport
-                    .stream(businessRepository.findAll().spliterator(), false)
-                    .map(this::mapToDTO)
-                    .collect(Collectors.toList());
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
-            return ResponseEntity.ok(
-                    new ApiResponse<>("success", "Businesses fetched successfully", businesses));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                    new ApiResponse<>("failure", "Error fetching businesses: " + e.getMessage(), null));
-        }
-    }
     @GetMapping("/dashboard/showMe")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ApiResponse<DashboardDetailsDTO>> getDashboardDetails() {
         try {
-            // Get authenticated user's info
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String username = authentication.getName();
             String role = authentication.getAuthorities()
@@ -56,36 +42,53 @@ public class BusinessController {
                     .findFirst()
                     .orElse("USER");
 
-            // Fetch business with ID = 1
-            Business business = businessRepository.findById(1L).orElse(null);
+            Business business = businessRepository.findById(DEFAULT_BUSINESS_ID).orElse(null);
             if (business == null) {
                 return ResponseEntity.status(404).body(
-                        new ApiResponse<>("failure", "Business with ID 1 not found", null));
+                        new ApiResponse<>("failure", "Default business not found", null));
             }
 
-            // Build DTO
             DashboardDetailsDTO dto = new DashboardDetailsDTO(username, role, business.getName());
-
             return ResponseEntity.ok(
-                    new ApiResponse<>("success", "Dashboard details fetched successfully", dto)
-            );
-
+                    new ApiResponse<>("success", "Dashboard details fetched successfully", dto));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(
                     new ApiResponse<>("failure", "Error fetching dashboard details: " + e.getMessage(), null));
         }
     }
 
-
-
-    
-
-    // Get business by ID
-    @GetMapping("/{id}")
+    // === Update default business logo ===
+    @PutMapping(value = "/logo", consumes = {"multipart/form-data"})
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<ApiResponse<BusinessDTO>> getBusinessById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<BusinessDTO>> updateBusinessLogo(
+            @RequestParam("file") MultipartFile file) {
         try {
-            return businessRepository.findById(id)
+            return businessRepository.findById(DEFAULT_BUSINESS_ID).<ResponseEntity<ApiResponse<BusinessDTO>>>map(existing -> {
+                try {
+                    String logoUrl = cloudinaryService.uploadFile(file);
+                    existing.setLogoUrl(logoUrl);
+                    Business saved = businessRepository.save(existing);
+                    return ResponseEntity.ok(
+                            new ApiResponse<>("success", "Business logo updated successfully", mapToDTO(saved))
+                    );
+                } catch (IOException e) {
+                    return ResponseEntity.status(500).body(
+                            new ApiResponse<>("failure", "Error uploading logo: " + e.getMessage(), null));
+                }
+            }).orElse(ResponseEntity.status(404).body(
+                    new ApiResponse<>("failure", "Default business not found", null)));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                    new ApiResponse<>("failure", "Error updating logo: " + e.getMessage(), null));
+        }
+    }
+
+    // === Get default business ===
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BusinessDTO>> getBusiness() {
+        try {
+            return businessRepository.findById(DEFAULT_BUSINESS_ID)
                     .map(business -> ResponseEntity.ok(
                             new ApiResponse<>("success", "Business found", mapToDTO(business))))
                     .orElse(ResponseEntity.status(404).body(
@@ -95,27 +98,30 @@ public class BusinessController {
                     new ApiResponse<>("failure", "Error fetching business: " + e.getMessage(), null));
         }
     }
-
-    // Add new business
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<ApiResponse<BusinessDTO>> addBusiness(@RequestBody Business business) {
-        try {
-            Business saved = businessRepository.save(business);
-            return ResponseEntity.ok(
-                    new ApiResponse<>("success", "Business added successfully", mapToDTO(saved)));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                    new ApiResponse<>("failure", "Error adding business: " + e.getMessage(), null));
-        }
+    // === Upload a logo file only (without updating business DB) ===
+@PostMapping(value = "/logo", consumes = {"multipart/form-data"})
+@PreAuthorize("hasAnyRole('ADMIN')")
+public ResponseEntity<ApiResponse<String>> uploadBusinessLogo(
+        @RequestParam("file") MultipartFile file) {
+    try {
+        String logoUrl = cloudinaryService.uploadFile(file);
+        return ResponseEntity.ok(
+                new ApiResponse<>("success", "Logo uploaded successfully", logoUrl)
+        );
+    } catch (IOException e) {
+        return ResponseEntity.status(500).body(
+                new ApiResponse<>("failure", "Error uploading logo: " + e.getMessage(), null)
+        );
     }
+}
 
-    // Update business
-    @PutMapping("/{id}")
+
+    // === Update default business ===
+    @PutMapping
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<ApiResponse<BusinessDTO>> updateBusiness(@PathVariable Long id, @RequestBody Business updatedBusiness) {
+    public ResponseEntity<ApiResponse<BusinessDTO>> updateBusiness(@RequestBody Business updatedBusiness) {
         try {
-            return businessRepository.findById(id).map(existing -> {
+            return businessRepository.findById(DEFAULT_BUSINESS_ID).map(existing -> {
                 existing.setName(updatedBusiness.getName());
                 existing.setGstNumber(updatedBusiness.getGstNumber());
                 existing.setAddress(updatedBusiness.getAddress());
@@ -135,25 +141,6 @@ public class BusinessController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(
                     new ApiResponse<>("failure", "Error updating business: " + e.getMessage(), null));
-        }
-    }
-
-    // Delete business
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<ApiResponse<String>> deleteBusiness(@PathVariable Long id) {
-        try {
-            if (businessRepository.existsById(id)) {
-                businessRepository.deleteById(id);
-                return ResponseEntity.ok(
-                        new ApiResponse<>("success", "Business deleted successfully", null));
-            } else {
-                return ResponseEntity.status(404).body(
-                        new ApiResponse<>("failure", "Business not found", null));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                    new ApiResponse<>("failure", "Error deleting business: " + e.getMessage(), null));
         }
     }
 
