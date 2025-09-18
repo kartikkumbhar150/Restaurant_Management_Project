@@ -13,9 +13,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class StaffUserService {
 
     private final MasterBusinessRepository businessRepository;
@@ -24,6 +26,10 @@ public class StaffUserService {
     private final AuthenticationManager authManager;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
+    /**
+     * Save staff user to master DB with encoded password.
+     * No token is generated here, only on login.
+     */
     public void saveStaffToMaster(Staff staff, Long businessId) {
         String originalTenant = TenantContext.getCurrentTenant();
         try {
@@ -40,8 +46,8 @@ public class StaffUserService {
             user.setRole(staff.getRole());
             user.setPassword(encoder.encode(staff.getPassword())); // Always encode
             user.setDbName(business.getDbName());
-            user.setToken(jwtService.getLastGeneratedToken());
-            
+
+            // 🚫 Do not set token here — tokens only on login
 
             staffUserRepository.saveAndFlush(user);
         } finally {
@@ -49,6 +55,10 @@ public class StaffUserService {
         }
     }
 
+    /**
+     * Authenticate user and generate + persist new token.
+     * Old token is overwritten so only one valid token exists per user.
+     */
     public String verify(StaffUser user) {
         Authentication authentication = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -60,13 +70,21 @@ public class StaffUserService {
         if (authentication.isAuthenticated()) {
             StaffUser dbUser = findByUserName(user.getUserName());
             if (dbUser != null) {
-                return generateToken(
+                // ✅ Generate new token
+                String newToken = jwtService.generateToken(
                         dbUser.getUserName(),
                         dbUser.getRole(),
                         dbUser.getDbName()
                 );
+
+                // ✅ Save in DB (overwrite old token)
+                dbUser.setToken(newToken);
+                staffUserRepository.saveAndFlush(dbUser);
+
+                return newToken;
             }
         }
+
         return "fail";
     }
 
@@ -76,10 +94,6 @@ public class StaffUserService {
 
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return encoder.matches(rawPassword, encodedPassword);
-    }
-
-    public String generateToken(String username, String role, String dbName) {
-        return jwtService.generateToken(username, role, dbName);
     }
 
     public void deleteStaffFromMaster(Long staffId) {

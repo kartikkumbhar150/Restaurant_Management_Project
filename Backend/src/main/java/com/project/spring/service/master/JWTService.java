@@ -73,17 +73,20 @@ public class JWTService {
         }
     }
     public boolean isTokenValidForUser(String token, StaffUser dbUser) {
-        try {
-            String username = extractUserName(token);
+    try {
+        String username = extractUserName(token);
 
-            // Token must belong to the same user AND match the stored token
-            return username.equals(dbUser.getUserName())
-                    && token.equals(dbUser.getToken())
-                    && !isTokenExpired(token);
-        } catch (Exception e) {
-            return false;
-        }
+        // ✅ must match DB stored token
+        return username.equals(dbUser.getUserName())
+                && token.equals(dbUser.getToken())
+                && !isTokenExpired(token);
+    } catch (Exception e) {
+        return false;
     }
+}
+
+
+
 
 
     // ===== INTERNAL HELPERS =====
