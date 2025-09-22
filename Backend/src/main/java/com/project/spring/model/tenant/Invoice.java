@@ -17,7 +17,7 @@ public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
     @Column(name = "invoice_number")
     private Long invoiceNumber;
 

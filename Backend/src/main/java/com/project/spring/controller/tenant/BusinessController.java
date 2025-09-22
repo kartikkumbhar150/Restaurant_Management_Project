@@ -48,7 +48,7 @@ public class BusinessController {
                         new ApiResponse<>("failure", "Default business not found", null));
             }
 
-            DashboardDetailsDTO dto = new DashboardDetailsDTO(username, role, business.getName());
+            DashboardDetailsDTO dto = new DashboardDetailsDTO(username, role, business.getName(), business.getLogoUrl());
             return ResponseEntity.ok(
                     new ApiResponse<>("success", "Dashboard details fetched successfully", dto));
         } catch (Exception e) {

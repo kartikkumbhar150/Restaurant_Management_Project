@@ -137,6 +137,7 @@ CREATE TABLE invoice (
     id SERIAL PRIMARY KEY,
     
     customer_name VARCHAR(255),
+    customer_phoneno VARCHAR(20),
     date VARCHAR(255),
     invoice_number BIGINT,
     item_description VARCHAR(255),

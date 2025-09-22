@@ -4,14 +4,17 @@ public class DashboardDetailsDTO {
     private String username;
     private String role;
     private String businessName;
+    private String logoUrl;
 
     // Constructors
     public DashboardDetailsDTO() {}
 
-    public DashboardDetailsDTO(String username, String role, String businessName) {
+    public DashboardDetailsDTO(String username, String role, String businessName, String logoUrl) {
         this.username = username;
         this.role = role;
         this.businessName = businessName;
+        this.logoUrl = logoUrl;
+    
     }
 
     // Getters and Setters
@@ -37,5 +40,11 @@ public class DashboardDetailsDTO {
 
     public void setBusinessName(String businessName) {
         this.businessName = businessName;
+    }
+    public String getLogoUrl(){
+        return logoUrl;
+    }
+    public void setLogoUrl(String logoUrl){
+        this.logoUrl = logoUrl;
     }
 }

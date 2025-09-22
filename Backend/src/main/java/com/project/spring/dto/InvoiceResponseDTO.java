@@ -27,7 +27,7 @@ public class InvoiceResponseDTO {
 
     private double grandTotal;
     
-
+    private String logoUrl;
     private String businessName;
     private String businessAddress;
     private String businessGstNumber;
