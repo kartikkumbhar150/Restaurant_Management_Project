@@ -11,5 +11,6 @@ public class DateRangeSummaryDTO {
     private double totalSales;
     private long invoiceCount;
     private double averageInvoiceValue;
+    private double expense;
     private List<ItemReportDTO> mostSellingItems;
 }

@@ -1,10 +1,12 @@
 package com.project.spring.controller.tenant;
 
 import com.project.spring.dto.DailySalesDTO;
+import com.project.spring.dto.DateRangeExpenseDTO;
 import com.project.spring.dto.DateRangeRequest;
 import com.project.spring.dto.DateRangeSummaryDTO;
 import com.project.spring.model.tenant.Invoice;
 import com.project.spring.repo.tenant.InvoiceRepository;
+import com.project.spring.repo.tenant.InventoryRepository;
 import com.project.spring.service.tenant.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -23,12 +25,17 @@ public class ReportController {
 
     private final InvoiceRepository invoiceRepository;
     private final ReportService dateRangeReportService;
+    private final InventoryRepository inventoryRepository;
     
 
     @GetMapping("/most-selling-items")
     public ResponseEntity<?> getMostSellingItems() {
-        // ✅ Fetch only top 5 items
+        //  Fetch only top 5 items
         return ResponseEntity.ok(invoiceRepository.getMostSellingItems(PageRequest.of(0, 5)));
+    }
+    @GetMapping("/all-selling-items")
+    public ResponseEntity<?> getAllSellingItems() {
+        return ResponseEntity.ok(invoiceRepository.getAllSellingItems(PageRequest.of(0, 12000)));
     }
 
     @GetMapping("/last-invoice-number")
@@ -43,6 +50,11 @@ public class ReportController {
 
         List<Invoice> invoices = invoiceRepository.findInvoicesBetweenDates(startStr, endStr);
         return ResponseEntity.ok(invoices);
+    }
+    @PostMapping("/expense-report")
+    public ResponseEntity<?> getTotalExpenseBetweenDates(@RequestBody DateRangeRequest range){
+        DateRangeExpenseDTO dto = dateRangeReportService.expenseSummary(range.getStartDate(), range.getEndDate());
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping("/summary-range")

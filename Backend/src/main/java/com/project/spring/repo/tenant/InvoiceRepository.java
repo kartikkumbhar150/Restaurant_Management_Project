@@ -36,6 +36,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
            "FROM OrderItem o GROUP BY o.itemName ORDER BY SUM(o.quantity) DESC")
     List<ItemReportDTO> getMostSellingItems(Pageable pageable);
 
+    @Query("SELECT new com.project.spring.dto.ItemReportDTO(o.itemName, SUM(o.quantity)) " +
+           "FROM OrderItem o GROUP BY o.itemName ORDER BY SUM(o.quantity) DESC")
+    List<ItemReportDTO> getAllSellingItems(Pageable pageable);
+
     // Count invoices between dates
     @Query("SELECT COUNT(i) FROM Invoice i WHERE i.date BETWEEN :start AND :end")
     long countInvoicesBetweenDates(@Param("start") String start,
