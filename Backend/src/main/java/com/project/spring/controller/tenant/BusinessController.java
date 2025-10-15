@@ -113,6 +113,41 @@ public ResponseEntity<ApiResponse<String>> uploadBusinessLogo(
                 new ApiResponse<>("failure", "Error uploading logo: " + e.getMessage(), null)
         );
     }
+}   
+    @PostMapping
+@PreAuthorize("hasAnyRole('ADMIN')")
+public ResponseEntity<ApiResponse<BusinessDTO>> addBusiness(@RequestBody Business newBusiness) {
+    try {
+        // If default business already exists → update it
+        return businessRepository.findById(DEFAULT_BUSINESS_ID).map(existing -> {
+            existing.setName(newBusiness.getName());
+            existing.setGstNumber(newBusiness.getGstNumber());
+            existing.setAddress(newBusiness.getAddress());
+            existing.setLogoUrl(newBusiness.getLogoUrl());
+            existing.setFssaiNo(newBusiness.getFssaiNo());
+            existing.setLicenceNo(newBusiness.getLicenceNo());
+            existing.setGstType(newBusiness.getGstType());
+            existing.setPhoneNo(newBusiness.getPhoneNo());
+            existing.setEmail(newBusiness.getEmail());
+            existing.setTableCount(newBusiness.getTableCount());
+
+            Business saved = businessRepository.save(existing);
+            return ResponseEntity.ok(
+                    new ApiResponse<>("success", "Business updated successfully", mapToDTO(saved))
+            );
+        }).orElseGet(() -> {
+            // If no default business exists → create a new one
+            newBusiness.setId(DEFAULT_BUSINESS_ID); // ensure ID = default business ID
+            Business saved = businessRepository.save(newBusiness);
+            return ResponseEntity.ok(
+                    new ApiResponse<>("success", "Business created successfully", mapToDTO(saved))
+            );
+        });
+    } catch (Exception e) {
+        return ResponseEntity.status(500).body(
+                new ApiResponse<>("failure", "Error adding/updating business: " + e.getMessage(), null)
+        );
+    }
 }
 
 

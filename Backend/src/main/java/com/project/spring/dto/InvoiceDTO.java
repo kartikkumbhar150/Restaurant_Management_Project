@@ -14,6 +14,7 @@ public class InvoiceDTO {
     private String date;
     private String time;
     private String customerName;
+    private String customerphoneNo;
  // instead of itemDescription, quantity, pricePerItem
 
 }

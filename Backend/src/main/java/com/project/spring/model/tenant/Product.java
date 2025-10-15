@@ -24,8 +24,6 @@ public class Product {
     private Integer price;
     @Column(name = "description")
     private String description;
-    @Column(name = "image_url")
-    private String imageUrl;
     @Column(name = "category")
     private String category;
     @Column(name = "subcategory")

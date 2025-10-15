@@ -98,17 +98,16 @@ CREATE TABLE business (
     gst_number VARCHAR(20) UNIQUE,
     fssai_no VARCHAR(20) UNIQUE,
     address VARCHAR(200) NOT NULL,
-    logo_url VARCHAR(200),
     gst_type INTEGER,
     licence_no VARCHAR(200) UNIQUE,
     phone_no VARCHAR(20),
     email VARCHAR(100),
-    table_count INTEGER
+    table_count INTEGER,
+    logo_url VARCHAR(200)
 );
 
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
-    image_url VARCHAR(200),
     name VARCHAR(100) NOT NULL,
     description VARCHAR(200),
     category VARCHAR(100),
@@ -140,7 +139,7 @@ CREATE TABLE invoice (
     customer_phoneno VARCHAR(20),
     date VARCHAR(255),
     invoice_number BIGINT,
-    item_description VARCHAR(255),
+    item_description VARCHAR(25555),
     payment_status VARCHAR(255),
     quantity INTEGER NOT NULL,
     sub_total DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -154,6 +153,7 @@ CREATE TABLE invoice (
     business_id BIGINT,
     "time" VARCHAR(255),
     table_number BIGINT,
+    business_gst_type BIGINT,
     order_id BIGINT
 );
 
@@ -163,7 +163,7 @@ CREATE TABLE staff (
     name VARCHAR(255),
     password VARCHAR(255) NOT NULL,
     role VARCHAR(255),
-    username VARCHAR(255) NOT NULL UNIQUE
+    user_name VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE inventory (

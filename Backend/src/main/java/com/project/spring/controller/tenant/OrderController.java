@@ -74,4 +74,25 @@ public class OrderController {
             );
         }
     }
+
+    // Delete an order by ID
+    @DeleteMapping("/{orderId}")
+    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long orderId) {
+        try {
+            boolean deleted = orderService.deleteOrder(orderId);
+            if (deleted) {
+                return ResponseEntity.ok(
+                    new ApiResponse<>("success", "Order deleted successfully", null)
+                );
+            } else {
+                return ResponseEntity.status(404).body(
+                    new ApiResponse<>("failure", "Order not found", null)
+                );
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                new ApiResponse<>("failure", "Failed to delete order: " + e.getMessage(), null)
+            );
+        }
+    }
 }

@@ -73,10 +73,10 @@ public class OrderService {
      * Fetch order by ID with items to avoid LazyInitializationException.
      */
     @Transactional
-    public OrderResponse getOrderById(Long tableNumber) {
-        Order order = orderRepository.findByIdWithItems(tableNumber)
+    public OrderResponse getOrderById(Long orderId) {
+        Order order = orderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Order not found with ID: " + tableNumber));
+                        "Order not found with ID: " + orderId));
         return mapToOrderResponse(order);
     }
 
@@ -98,9 +98,11 @@ public class OrderService {
                     .findFirst();
 
             if (existingItemOpt.isPresent()) {
+                // Update quantity if product already exists in order
                 OrderItem existingItem = existingItemOpt.get();
                 existingItem.setQuantity(existingItem.getQuantity() + itemRequest.getQuantity());
             } else {
+                // Add as a new item
                 Product product = productRepository.findById(itemRequest.getProductId())
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 "Product not found with ID: " + itemRequest.getProductId()));
@@ -122,6 +124,18 @@ public class OrderService {
         kotStore.addOrder(updatedOrder); // Send updated items to KOT
 
         return mapToOrderResponse(updatedOrder);
+    }
+
+    /**
+     * Delete an order by ID.
+     */
+    @Transactional
+    public boolean deleteOrder(Long orderId) {
+        if (orderRepository.existsById(orderId)) {
+            orderRepository.deleteById(orderId);
+            return true;
+        }
+        return false;
     }
 
     /**

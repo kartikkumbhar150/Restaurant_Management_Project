@@ -25,7 +25,7 @@ public class ReportController {
 
     private final InvoiceRepository invoiceRepository;
     private final ReportService dateRangeReportService;
-    private final InventoryRepository inventoryRepository;
+    
     
 
     @GetMapping("/most-selling-items")

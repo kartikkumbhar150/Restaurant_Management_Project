@@ -27,6 +27,8 @@ public class Invoice {
     @Column(name = "customer_name")
     private String customerName;
 
+    @Column(name = "customer_phoneNo")
+    private String customerPhoneNo;
     @Column(name = "item_description")
     private String itemDescription;
 
