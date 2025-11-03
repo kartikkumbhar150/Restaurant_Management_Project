@@ -19,8 +19,8 @@ public class InventoryService {
     @Autowired
     private InventoryRepository inventoryRepository;
 
-    // pattern for HH:mm, change if you want seconds etc.
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("hh:mm a");
+
 
     /** Create single inventory item (auto-sets today's date & time). */
     public Inventory createInventory(InventoryDTO inventoryDTO) {

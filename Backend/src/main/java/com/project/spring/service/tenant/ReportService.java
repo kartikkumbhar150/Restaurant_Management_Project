@@ -34,7 +34,7 @@ public class ReportService {
         double q = inventoryRepository.getTotalExpenseBetweenDates(startStr, endStr);
 
         // Fetch only top 5 directly from DB
-        List<ItemReportDTO> topItems = invoiceRepository.getMostSellingItems(PageRequest.of(0, 5));
+        List<ItemReportDTO> topItems = invoiceRepository.getMostSellingItems(PageRequest.of(0, 12000));
 
         DateRangeSummaryDTO dto = new DateRangeSummaryDTO();
         dto.setStartDate(start);

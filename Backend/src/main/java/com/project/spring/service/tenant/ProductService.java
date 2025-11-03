@@ -1,7 +1,11 @@
 package com.project.spring.service.tenant;
 
 import com.project.spring.model.tenant.Product;
+import com.project.spring.repo.tenant.OrderItemRepository;
 import com.project.spring.repo.tenant.ProductRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.project.spring.exception.ResourceNotFoundException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +27,8 @@ public class ProductService {
 
     @Autowired
     private ProductRepository productRepository;
+    @Autowired 
+    private OrderItemRepository orderItemRepository;
 
     public Product createProduct(Product product) {
         return productRepository.save(product);
@@ -89,5 +95,39 @@ public class ProductService {
     
         return products; // Return without saving
     }
+    @Transactional
+    public List<Product> processProductsFromCsv(MultipartFile file) throws Exception {
+        File tempFile = File.createTempFile("upload-", ".xlsx");
+        file.transferTo(tempFile);
+
+        ProcessBuilder pb = new ProcessBuilder("python", "main2.py", tempFile.getAbsolutePath());
+        pb.directory(new File(System.getProperty("user.dir") + "/python"));
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+        StringBuilder outputBuilder = new StringBuilder();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) outputBuilder.append(line);
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) throw new RuntimeException("Python script failed: " + outputBuilder);
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<Product> products = mapper.readValue(outputBuilder.toString(), new TypeReference<List<Product>>() {});
+
+        // Delete dependent entities first
+        orderItemRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+
+        // Save fresh data
+        List<Product> savedProducts = productRepository.saveAll(products);
+
+        tempFile.delete();
+        return savedProducts;
+    }
+
     
 }

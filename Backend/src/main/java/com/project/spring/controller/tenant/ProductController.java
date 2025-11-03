@@ -108,6 +108,21 @@ public class ProductController {
             );
         }
     }
+    @PostMapping(value = "/bulk/upload/csv", consumes = "multipart/form-data")
+public ResponseEntity<?> uploadCsv(@RequestParam("file") MultipartFile file) {
+    try {
+        List<Product> products = productService.processProductsFromCsv(file);
+        return ResponseEntity.ok(
+            new ApiResponse<>("success", "Products replaced and uploaded successfully", products)
+        );
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>("failure", "Error processing file: " + e.getMessage(), null));
+    }
+}
+
+
 
     @PutMapping("/{productId}")
     public ResponseEntity<ApiResponse<Product>> updateProduct(@PathVariable Long productId, @RequestBody Product product) {
