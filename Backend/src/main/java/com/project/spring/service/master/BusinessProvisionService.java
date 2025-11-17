@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,26 +28,25 @@ public class BusinessProvisionService {
     @Autowired
     private MasterDatabaseProperties masterDbProps;
 
-
-
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
-    public String createBusiness(String name, String password, String dbNamee, String ownerName, String userName,  Long phoneNo , String email) {
-        // Check for duplicate username
+    public String createBusiness(String name, String password, String dbNamee, String ownerName, String userName, Long phoneNo, String email) {
+
         Optional<MasterBusiness> existing = masterRepo.findByDbName(dbNamee);
         if (existing.isPresent()) {
             throw new RuntimeException("Username already exists");
         }
 
-        // Generate database name
         String baseName = name.trim().toLowerCase().replaceAll("[^a-z0-9]", "_");
         String dbName = "business_" + baseName + "_" + UUID.randomUUID().toString().substring(0, 3);
 
-        // Step 1: Create DB first to prevent saving entry if DB fails
         createDatabase(dbName);
         initializeSchema(dbName);
 
-        // Step 2: Save business credentials in master DB
+        // NEW STEP: Insert default business row
+        createDefaultBusinessRow(dbName, name, phoneNo, email);
+
+        // Save master business
         MasterBusiness business = new MasterBusiness();
         business.setBusinessName(name);
         business.setOwnerName(ownerName);
@@ -56,13 +56,13 @@ public class BusinessProvisionService {
 
         masterRepo.save(business);
 
+        // Create owner user
         StaffUser staffUser = new StaffUser();
         staffUser.setName(ownerName);
         staffUser.setUserName(userName);
         staffUser.setPassword(passwordEncoder.encode(password));
         staffUser.setDbName(dbName);
         staffUser.setRole("ADMIN");
-       
 
         staffUserRepo.save(staffUser);
 
@@ -70,16 +70,16 @@ public class BusinessProvisionService {
     }
 
     private void createDatabase(String dbName) {
-        String masterDbUrl = masterDbProps.getJdbcUrl(); 
+        String masterDbUrl = masterDbProps.getJdbcUrl();
         String dbUsername = masterDbProps.getUsername();
         String dbPassword = masterDbProps.getPassword();
 
         try (Connection conn = DriverManager.getConnection(masterDbUrl, dbUsername, dbPassword)) {
             Statement stmt = conn.createStatement();
             stmt.executeUpdate("CREATE DATABASE \"" + dbName + "\"");
-            System.out.println(" Created database: " + dbName);
+            System.out.println("Created database: " + dbName);
         } catch (Exception e) {
-            throw new RuntimeException(" DB creation failed: " + e.getMessage(), e);
+            throw new RuntimeException("DB creation failed: " + e.getMessage(), e);
         }
     }
 
@@ -97,7 +97,7 @@ CREATE TABLE business (
     name VARCHAR(100) NOT NULL,
     gst_number VARCHAR(20) UNIQUE,
     fssai_no VARCHAR(20) UNIQUE,
-    address VARCHAR(200) NOT NULL,
+    address VARCHAR(200),
     gst_type INTEGER,
     licence_no VARCHAR(200) UNIQUE,
     phone_no VARCHAR(20),
@@ -134,7 +134,6 @@ CREATE TABLE order_item (
 
 CREATE TABLE invoice (
     id SERIAL PRIMARY KEY,
-    
     customer_name VARCHAR(255),
     customer_phoneno VARCHAR(20),
     date VARCHAR(255),
@@ -146,17 +145,14 @@ CREATE TABLE invoice (
     sgst DOUBLE PRECISION NOT NULL DEFAULT 0,
     cgst DOUBLE PRECISION NOT NULL DEFAULT 0,
     grand_total DOUBLE PRECISION NOT NULL DEFAULT 0,
-
     total_amount DOUBLE PRECISION NOT NULL,
     gst_value DOUBLE PRECISION,
-
     business_id BIGINT,
     "time" VARCHAR(255),
     table_number BIGINT,
     business_gst_type BIGINT,
     order_id BIGINT
 );
-
 
 CREATE TABLE staff (
     id SERIAL PRIMARY KEY,
@@ -175,16 +171,40 @@ CREATE TABLE inventory (
     date VARCHAR(255),
     time VARCHAR(255)
 );
-
-
-
 """);
 
-
-
             System.out.println("Initialized schema in DB: " + dbName);
+
         } catch (Exception e) {
-            throw new RuntimeException(" Schema initialization failed in DB [" + dbName + "]: " + e.getMessage(), e);
+            throw new RuntimeException("Schema initialization failed in DB [" + dbName + "]: " + e.getMessage(), e);
+        }
+    }
+
+    // NEW METHOD: Inserts default row into business table
+    private void createDefaultBusinessRow(String dbName, String name, Long phone, String email) {
+        String tenantDbUrl = masterDbProps.getFirstUrl() + dbName + masterDbProps.getLastUrl();
+        String dbUsername = masterDbProps.getUsername();
+        String dbPassword = masterDbProps.getPassword();
+
+        String sql = """
+            INSERT INTO business 
+                (id, name, phone_no, email, gst_number, fssai_no, address, gst_type, licence_no, table_count, logo_url)
+            VALUES 
+                (1, ?, ?, ?, '', '', '', 0, '', 0, '')
+            ON CONFLICT (id) DO NOTHING;
+        """;
+
+        try (Connection conn = DriverManager.getConnection(tenantDbUrl, dbUsername, dbPassword)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, name);
+            pstmt.setLong(2, phone);
+            pstmt.setString(3, email);
+            pstmt.executeUpdate();
+
+            System.out.println("Inserted default business row into: " + dbName);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed inserting default business row in DB [" + dbName + "]: " + e.getMessage(), e);
         }
     }
 }

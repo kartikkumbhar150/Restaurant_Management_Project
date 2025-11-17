@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,16 +76,36 @@ public class ReportService {
     }
     public List<Map<String, Object>> getLast7DaysSalesByTimeSlots() {
     List<Object[]> rows = invoiceRepository.getLast7DaysSalesByTimeSlots();
-    List<Map<String, Object>> result = new ArrayList<>();
+    Map<String, Double> salesMap = new HashMap<>();
 
+    // Store actual results from DB in a map
     for (Object[] row : rows) {
+        String slot = (String) row[0];
+        double sales = ((Number) row[1]).doubleValue();
+        salesMap.put(slot, sales);
+    }
+
+    // Define all 6 expected time slots in order
+    List<String> allSlots = Arrays.asList(
+        "12 AM - 04 AM",
+        "04 AM - 08 AM",
+        "08 AM - 12 PM",
+        "12 PM - 04 PM",
+        "04 PM - 08 PM",
+        "08 PM - 12 AM"
+    );
+
+    // Build final result list (fill 0.0 if missing)
+    List<Map<String, Object>> result = new ArrayList<>();
+    for (String slot : allSlots) {
         Map<String, Object> map = new HashMap<>();
-        map.put("timeSlot", (String) row[0]);
-        map.put("totalSales", ((Number) row[1]).doubleValue());
+        map.put("timeSlot", slot);
+        map.put("totalSales", salesMap.getOrDefault(slot, 0.0));
         result.add(map);
     }
 
     return result;
 }
+
 
 }

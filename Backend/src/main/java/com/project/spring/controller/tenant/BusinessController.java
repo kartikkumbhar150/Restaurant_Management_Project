@@ -30,36 +30,43 @@ public class BusinessController {
     private CloudinaryService cloudinaryService;
 
     @GetMapping("/dashboard/showMe")
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<ApiResponse<DashboardDetailsDTO>> getDashboardDetails() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = authentication.getName();
-            String role = authentication.getAuthorities()
-                    .stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .map(r -> r.replace("ROLE_", ""))
-                    .findFirst()
-                    .orElse("USER");
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CHEF')")
+public ResponseEntity<ApiResponse<DashboardDetailsDTO>> getDashboardDetails() {
+    try {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            Business business = businessRepository.findById(DEFAULT_BUSINESS_ID).orElse(null);
-            if (business == null) {
-                return ResponseEntity.status(404).body(
-                        new ApiResponse<>("failure", "Default business not found", null));
-            }
+        String username = authentication.getName();
+        String role = authentication.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(r -> r.replace("ROLE_", ""))
+                .findFirst()
+                .orElse("USER");
 
-            DashboardDetailsDTO dto = new DashboardDetailsDTO(username, role, business.getName(), business.getLogoUrl());
-            return ResponseEntity.ok(
-                    new ApiResponse<>("success", "Dashboard details fetched successfully", dto));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                    new ApiResponse<>("failure", "Error fetching dashboard details: " + e.getMessage(), null));
-        }
+        // Fetch business (may be null)
+        Business business = businessRepository.findById(DEFAULT_BUSINESS_ID).orElse(null);
+
+        // If business not found → return empty values
+        String businessName = (business != null) ? business.getName() : "";
+        String logoUrl = (business != null) ? business.getLogoUrl() : "";
+
+        DashboardDetailsDTO dto = new DashboardDetailsDTO(username, role, businessName, logoUrl);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("success", "Dashboard details fetched successfully", dto)
+        );
+
+    } catch (Exception e) {
+        return ResponseEntity.status(500).body(
+                new ApiResponse<>("failure", "Error fetching dashboard details: " + e.getMessage(), null)
+        );
     }
+}
+
 
     // === Update default business logo ===
     @PutMapping(value = "/logo", consumes = {"multipart/form-data"})
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CHEF')")
     public ResponseEntity<ApiResponse<BusinessDTO>> updateBusinessLogo(
             @RequestParam("file") MultipartFile file) {
         try {
@@ -85,7 +92,7 @@ public class BusinessController {
 
     // === Get default business ===
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CHEF')")
     public ResponseEntity<ApiResponse<BusinessDTO>> getBusiness() {
         try {
             return businessRepository.findById(DEFAULT_BUSINESS_ID)
@@ -100,7 +107,7 @@ public class BusinessController {
     }
     // === Upload a logo file only (without updating business DB) ===
 @PostMapping(value = "/logo", consumes = {"multipart/form-data"})
-@PreAuthorize("hasAnyRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CHEF')")
 public ResponseEntity<ApiResponse<String>> uploadBusinessLogo(
         @RequestParam("file") MultipartFile file) {
     try {
@@ -115,7 +122,7 @@ public ResponseEntity<ApiResponse<String>> uploadBusinessLogo(
     }
 }   
     @PostMapping
-@PreAuthorize("hasAnyRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CHEF')")
 public ResponseEntity<ApiResponse<BusinessDTO>> addBusiness(@RequestBody Business newBusiness) {
     try {
         // If default business already exists → update it
@@ -153,7 +160,7 @@ public ResponseEntity<ApiResponse<BusinessDTO>> addBusiness(@RequestBody Busines
 
     // === Update default business ===
     @PutMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CHEF')")
     public ResponseEntity<ApiResponse<BusinessDTO>> updateBusiness(@RequestBody Business updatedBusiness) {
         try {
             return businessRepository.findById(DEFAULT_BUSINESS_ID).map(existing -> {
