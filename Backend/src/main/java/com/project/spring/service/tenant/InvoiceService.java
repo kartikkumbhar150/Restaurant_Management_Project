@@ -43,18 +43,19 @@ public class InvoiceService {
 
         Invoice invoice = new Invoice();
 
-        // Auto invoice number
+        // Auto Invoice Number
         invoice.setInvoiceNumber(generateInvoiceNumber());
 
         invoice.setDate(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         invoice.setTime(LocalTime.now().format(DateTimeFormatter.ofPattern("hh:mm a")));
         invoice.setCustomerName(dto.getCustomerName());
+        invoice.setCustomerPhoneNo(dto.getCustomerPhoneNo());   // <-- Added
 
         Business business = businessRepository.findById(1L)
                 .orElseThrow(() -> new RuntimeException("Business not found"));
 
         invoice.setBusiness(business);
-        
+
         int gstType = Optional.ofNullable(business.getGstType())
                 .orElseThrow(() -> new RuntimeException("GST Type missing"));
         invoice.setBusinessGstType(gstType);
@@ -73,10 +74,10 @@ public class InvoiceService {
             subtotal += item.getQuantity() * item.getPrice();
         }
 
-        // GST Split
+        // GST calculations
         double gstRate = getGstPercentageByType(gstType);
-        double sgst = subtotal * (gstRate / 200.0);  // half of gstRate
-        double cgst = subtotal * (gstRate / 200.0);  // half of gstRate
+        double sgst = subtotal * (gstRate / 200.0);
+        double cgst = subtotal * (gstRate / 200.0);
         double grandTotal = subtotal + sgst + cgst;
 
         invoice.setItemDescription(itemDesc.toString().replaceAll(", $", ""));
@@ -94,7 +95,7 @@ public class InvoiceService {
         order.setCompleted(true);
         orderRepository.save(order);
 
-        // Broadcast updated today's sales
+        // Live sales update
         double todaySales = getTodaysSales();
         salesEmitterStore.broadcast(todaySales);
 
@@ -102,11 +103,10 @@ public class InvoiceService {
     }
 
     private Long generateInvoiceNumber() {
-    Long lastInvoice = invoiceRepository.findLastInvoiceNumber(); // e.g. 9
-    long nextNumber = (lastInvoice != null) ? lastInvoice + 1 : 1;
-    return nextNumber; // stores as 1, 2, 3 ... in DB
-}
-
+        Long lastInvoice = invoiceRepository.findLastInvoiceNumber();
+        long nextNumber = (lastInvoice != null) ? lastInvoice + 1 : 1;
+        return nextNumber;
+    }
 
     public InvoiceResponseDTO getInvoiceByInvoiceNumber(Long invoiceNumber) {
         return invoiceRepository.findByInvoiceNumber(invoiceNumber)
@@ -132,29 +132,31 @@ public class InvoiceService {
         dto.setDate(invoice.getDate());
         dto.setTime(invoice.getTime());
         dto.setCustomerName(invoice.getCustomerName());
+        dto.setCustomerPhoneNo(invoice.getCustomerPhoneNo());   // <-- Added
 
         dto.setTotalQuantity(invoice.getQuantity());
-
         dto.setSubTotal(invoice.getSubTotal());
         dto.setSgst(invoice.getSgst());
         dto.setCgst(invoice.getCgst());
+
         int gstRate = getGstPercentageByType(invoice.getBusinessGstType());
         dto.setSgstPercent(gstRate / 2.0);
         dto.setCgstPercent(gstRate / 2.0);
+
         dto.setGrandTotal(invoice.getGrandTotal());
 
+        // Business dynamic details
         if (invoice.getBusiness() != null) {
-        dto.setBusinessName(invoice.getBusiness().getName());
-        // <-- dynamic, not persisted on Invoice
-        dto.setBusinessAddress(invoice.getBusiness().getAddress());
-        dto.setBusinessGstNumber(invoice.getBusiness().getGstNumber());
-        dto.setBusinessFssai(invoice.getBusiness().getFssaiNo());
-    }
+            dto.setBusinessName(invoice.getBusiness().getName());
+            dto.setBusinessAddress(invoice.getBusiness().getAddress());
+            dto.setBusinessGstNumber(invoice.getBusiness().getGstNumber());
+            dto.setBusinessFssai(invoice.getBusiness().getFssaiNo());
+        }
 
+        // Order items
         if (invoice.getOrder() != null) {
             dto.setTableNumber(invoice.getTableNumber());
 
-            // Convert OrderItem -> ItemDTO list
             List<ItemDTO> items = invoice.getOrder().getItems().stream()
                     .map(oi -> new ItemDTO(
                             oi.getItemName(),
@@ -163,6 +165,7 @@ public class InvoiceService {
                             oi.getQuantity() * oi.getPrice()
                     ))
                     .collect(Collectors.toList());
+
             dto.setItems(items);
         }
 

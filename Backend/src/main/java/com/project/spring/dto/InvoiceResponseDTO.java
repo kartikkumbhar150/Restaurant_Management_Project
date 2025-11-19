@@ -15,6 +15,7 @@ public class InvoiceResponseDTO {
     private String date;
     private String time;
     private String customerName;
+    private String customerPhoneNo;
 
     private List<ItemDTO> items;
     private int totalQuantity;

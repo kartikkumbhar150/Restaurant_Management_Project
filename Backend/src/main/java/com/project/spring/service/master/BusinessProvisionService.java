@@ -182,29 +182,30 @@ CREATE TABLE inventory (
 
     // NEW METHOD: Inserts default row into business table
     private void createDefaultBusinessRow(String dbName, String name, Long phone, String email) {
-        String tenantDbUrl = masterDbProps.getFirstUrl() + dbName + masterDbProps.getLastUrl();
-        String dbUsername = masterDbProps.getUsername();
-        String dbPassword = masterDbProps.getPassword();
+    String tenantDbUrl = masterDbProps.getFirstUrl() + dbName + masterDbProps.getLastUrl();
+    String dbUsername = masterDbProps.getUsername();
+    String dbPassword = masterDbProps.getPassword();
 
-        String sql = """
-            INSERT INTO business 
-                (id, name, phone_no, email, gst_number, fssai_no, address, gst_type, licence_no, table_count, logo_url)
-            VALUES 
-                (1, ?, ?, ?, '', '', '', 0, '', 0, '')
-            ON CONFLICT (id) DO NOTHING;
-        """;
+    String sql = """
+        INSERT INTO business 
+            (id, name, phone_no, email, gst_number, fssai_no, address, gst_type, licence_no, table_count, logo_url)
+        VALUES 
+            (1, ?, ?, ?, '', '', '', 0, '', 0, 'https://res.cloudinary.com/drmfryblr/image/upload/v1763574139/crxidbrykihhdcbyn1nr.png')
+        ON CONFLICT (id) DO NOTHING;
+    """;
 
-        try (Connection conn = DriverManager.getConnection(tenantDbUrl, dbUsername, dbPassword)) {
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, name);
-            pstmt.setLong(2, phone);
-            pstmt.setString(3, email);
-            pstmt.executeUpdate();
+    try (Connection conn = DriverManager.getConnection(tenantDbUrl, dbUsername, dbPassword)) {
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setString(1, name);
+        pstmt.setLong(2, phone);
+        pstmt.setString(3, email);
+        pstmt.executeUpdate();
 
-            System.out.println("Inserted default business row into: " + dbName);
+        System.out.println("Inserted default business row into: " + dbName);
 
-        } catch (Exception e) {
-            throw new RuntimeException("Failed inserting default business row in DB [" + dbName + "]: " + e.getMessage(), e);
-        }
+    } catch (Exception e) {
+        throw new RuntimeException("Failed inserting default business row in DB [" + dbName + "]: " + e.getMessage(), e);
     }
+}
+
 }

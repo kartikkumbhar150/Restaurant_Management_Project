@@ -51,7 +51,7 @@ public class ForgotPasswordController {
     @PutMapping("/change-password")
     public ResponseEntity<ApiResponse<String>> updatePassword(@RequestBody UpdatePasswordDTO dto) {
         try {
-            boolean updated = otpService.updatePassword(dto.getUserName(), dto.getNewPassword());
+            boolean updated = otpService.updatePassword(dto.getUserName(), dto.getPassword());
             if (updated) {
                 return ResponseEntity.ok(
                     new ApiResponse<>("success", "Password updated successfully", null)
